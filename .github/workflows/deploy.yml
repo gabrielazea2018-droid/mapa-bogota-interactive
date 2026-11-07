@@ -14,6 +14,9 @@
 
 name: deploy-map
 
+# NOTE: GitHub only indexes workflow files that live directly in this folder on
+# the default branch, and it re-indexes when this file changes. Any edit here
+# (even a comment) forces a fresh registration in the Actions inventory.
 on:
   workflow_dispatch:
   schedule:
