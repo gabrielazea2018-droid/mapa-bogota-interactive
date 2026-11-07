@@ -1,0 +1,42 @@
+# ---------------------------------------------------------------------------
+# SECURITY: never commit secrets. .env files, API keys, tokens and passwords
+# must stay on your machine only. This file already ignores .env — keep it that
+# way. If you ever commit a secret by accident, revoke/rotate it immediately:
+# deleting the file from git history is NOT enough.
+# ---------------------------------------------------------------------------
+
+# Local environment files (secrets!)
+.env
+.env.*
+!.env.example
+
+# Downloaded / generated data — CI regenerates everything from sources.yaml.
+# The .gitkeep files are kept so the empty folders exist in the repository.
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+site/data/*
+!site/data/.gitkeep
+site/index.html
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.venv/
+venv/
+env/
+
+# Editors / IDEs
+.idea/
+.vscode/
+*.swp
+
+# Logs
+*.log
+
+# Windows junk
+Thumbs.db
+desktop.ini

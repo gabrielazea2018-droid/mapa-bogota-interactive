@@ -1,0 +1,119 @@
+# =============================================================================
+# sources.yaml — central data manifest for the Bogotá interactive map
+#
+# This is the ONLY place where dataset URLs live. scripts/fetch_data.py reads
+# it, downloads every entry into data/raw/ and records a provenance manifest.
+# No dataset is ever downloaded by hand.
+#
+# Every URL in this file was resolved programmatically from the official
+# Bogotá open-data CKAN API (package_show) — see BITACORA.md for the audit.
+# =============================================================================
+
+meta:
+  city: "Bogotá D.C., Colombia"
+  canonical_crs: "EPSG:4326"          # WGS84 lon/lat, required by Folium
+  source_catalog: "https://datosabiertos.bogota.gov.co"
+  ckan_api: "https://datosabiertos.bogota.gov.co/api/3/action"
+  fetched_utc: null                    # stamped by fetch_data.py
+
+datasets:
+
+  # --- 1. Administrative boundaries (choropleth + labels) --------------------
+  localidades:
+    label: "Localidades de Bogotá D.C."
+    provider: "Secretaría Distrital de Planeación (SDP) — La IDE de Bogotá (IDECA)"
+    license: "CC BY 4.0"
+    license_url: "https://creativecommons.org/licenses/by/4.0/"
+    dataset_url: "https://datosabiertos.bogota.gov.co/dataset/localidad-bogota-d-c"
+    format: geojson
+    url: "https://datosabiertos.bogota.gov.co/dataset/856cb657-8ca3-4ee8-857f-37211173b1f8/resource/497b8756-0927-4aee-8da9-ca4e32ca3a8a/download/loca.json"
+    out: localidades.geojson
+    layer: boundaries
+    required: true
+
+  barrios:
+    label: "Barrios legalizados"
+    provider: "Secretaría Distrital del Hábitat (SDHT) / IDECA"
+    license: "CC BY 4.0"
+    license_url: "https://creativecommons.org/licenses/by/4.0/"
+    dataset_url: "https://datosabiertos.bogota.gov.co/dataset/barrio-legalizado-bogota-d-c"
+    format: geojson
+    url: "https://datosabiertos.bogota.gov.co/dataset/36a80ef3-02c1-4a48-b3c7-c285e1de4323/resource/ba69f395-13ed-4071-802d-3808e2ba9062/download/barriolegalizado.json"
+    out: barrios.geojson
+    layer: boundaries
+    required: false
+
+  # --- 2. Indicators (choropleth values) ------------------------------------
+  poblacion_localidad:
+    label: "Hábitat en cifras — Indicadores demográficos por localidad"
+    provider: "Secretaría Distrital del Hábitat (SDHT)"
+    license: "CC BY-NC-SA 4.0"
+    license_url: "https://creativecommons.org/licenses/by-nc-sa/4.0/"
+    dataset_url: "https://datosabiertos.bogota.gov.co/dataset/habitat-en-cifras-en-las-localidades-indicadores-demograficos"
+    format: xlsx
+    url: "https://datosabiertos.bogota.gov.co/dataset/0e2e1744-4f72-481d-bf74-34b90d28e861/resource/b18a1095-2008-41ed-97a0-aeb4698b3699/download/indicadores-demograficos-habitat-en-las-localidades.xlsx"
+    out: indicadores_demograficos.xlsx
+    layer: indicator
+    required: true
+
+  registro_social:
+    label: "Registro social por localidad (respaldo del indicador)"
+    provider: "Secretaría Distrital del Hábitat (SDHT)"
+    license: "CC BY-NC-SA 4.0"
+    license_url: "https://creativecommons.org/licenses/by-nc-sa/4.0/"
+    dataset_url: "https://datosabiertos.bogota.gov.co/dataset/localidad-registro-social"
+    format: geojson
+    url: "https://datosabiertos.bogota.gov.co/dataset/b0b30888-0b2f-49fd-bb51-b9564fdb63e3/resource/bf51a6b2-3c87-4844-9b36-b899b41d1ce3/download/localidad_registro_social.geojson"
+    out: registro_social.geojson
+    layer: indicator
+    required: false
+
+  # --- 3. Points of interest ------------------------------------------------
+  ips:
+    label: "Instituciones Prestadoras de Salud (IPS)"
+    provider: "Secretaría Distrital de Salud (SDS) / IDECA"
+    license: "CC BY-SA 4.0"
+    license_url: "https://creativecommons.org/licenses/by-sa/4.0/"
+    dataset_url: "https://datosabiertos.bogota.gov.co/dataset/instituciones-prestadoras-de-salud-bogota"
+    format: geojson
+    url: "https://datosabiertos.bogota.gov.co/dataset/fc66362f-ba91-4d7a-af9c-d0b3d3a60106/resource/0e432b79-8c0f-4a0c-a592-43330712fe03/download/ips.geojson"
+    out: ips.geojson
+    layer: poi_health
+    required: true
+
+  colegios:
+    label: "Colegios de Bogotá D.C."
+    provider: "Secretaría Distrital de Educación (SDE) / IDECA"
+    license: "CC BY-SA 4.0"
+    license_url: "https://creativecommons.org/licenses/by-sa/4.0/"
+    dataset_url: "https://datosabiertos.bogota.gov.co/dataset/colegios-bogota-d-c"
+    format: geojson
+    url: "https://datosabiertos.bogota.gov.co/dataset/d451b52f-e30c-43b3-9066-3a7816638fea/resource/4cb45e38-779b-483b-acc4-5673c5db9505/download/colegios092026.geojson"
+    out: colegios.geojson
+    layer: poi_education
+    required: true
+
+  parques_pot:
+    label: "Parques — POT Bogotá D.C."
+    provider: "Secretaría Distrital del Hábitat (SDHT) / IDECA"
+    license: "CC BY 4.0"
+    license_url: "https://creativecommons.org/licenses/by/4.0/"
+    dataset_url: "https://datosabiertos.bogota.gov.co/dataset/parque-bogota-d-c"
+    format: geojson
+    url: "https://datosabiertos.bogota.gov.co/dataset/1ca41514-3671-41d6-8c3b-a970dc8c24a7/resource/16288e7f-0345-4680-84aa-40e987706ea8/download/parque.geojson"
+    out: parques_pot.geojson
+    layer: poi_parks
+    required: true
+
+  # NOTE — parques_idrd (IDRD) was evaluated and deliberately NOT published:
+  # its CSV carries no coordinates (Codigo Parque, Nombre Parque, Nombre
+  # Localidad, Tipologia, Administracion), so it cannot be plotted, and the
+  # POT "parques" layer already exposes an ADMINISTRADOR attribute. The
+  # decision is recorded in BITACORA.md.
+
+# --- Basemap tiles (not downloaded, referenced by build_map.py) --------------
+basemap:
+  name: "CartoDB Positron (OpenStreetMap)"
+  url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+  subdomains: "abcd"

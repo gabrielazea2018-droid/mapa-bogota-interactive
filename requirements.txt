@@ -1,0 +1,12 @@
+# Runtime dependencies for the Bogotá interactive map pipeline.
+# Deliberately avoids geopandas/fiona (heavy, fragile build chains) — plain
+# shapely + json + pandas covers everything this pipeline needs and keeps
+# installs identical on Windows and ubuntu-latest CI.
+folium>=0.17
+branca>=0.7
+shapely>=2.0
+pyproj>=3.6          # only needed to reproject sources shipped in projected CRS (barrios)
+pandas>=2.2
+openpyxl>=3.1
+requests>=2.31
+PyYAML>=6.0
