@@ -186,6 +186,8 @@ Ninguno de los siguientes se resolvió a mano: cada uno terminó en código del 
 | 16 | El mapa base **CartoDB Positron dejó de funcionar**: `basemaps.cartocdn.com` responde a toda petición sin clave con una imagen de **2 049 bytes** con la marca `API KEY REQUIRED` (verificado en `light_all`, `light_all@2x` y `rastertiles`), así que el mapa se publicaba sin calles | Se sondearon 9 proveedores descargando tiles reales de la misma celda: OSM (3 442 B), Esri Street Map (13 457 B) y Esri Light Gray (4 639 B) devolvían imagen verdadera. Se migró a **Esri Light Gray Canvas** más su capa `World_Light_Gray_Reference` para etiquetas, con atribución completa; `validate.py` (marker del check 3), `sources.yaml`, README y esta bitácora se actualizaron en el mismo cambio. |
 | 17 | La validación del agente B **rechazaba los datos reales**: su bbox (lon -74.4..-73.9, lat 3.7..4.8) no cubre Engativá (-74.45) ni Sumapaz (3.73); además el **test de aceptación fallaba** porque el sitio sintético solo traía 3 archivos y 2 localidades | Bbox ampliado a lon -74.60..-73.70 y lat 3.50..5.10, con verificación de que las 5 capas quedan al **100 % dentro**. El fixture de `tests/test_pipeline.py` se hizo realista: 20 localidades, 1 050 IPS, 1 050 colegios, 130 barrios y 130 parques, con el mismo contrato de 7 archivos que publica `process_data.py`. |
 | 18 | Dos agentes escribieron `build_map.py` y `validate.py` **en paralelo**: la versión del orquestador fue sobrescrita por la del agente B | Se probó la de B en el navegador (leyenda de 9 filas, ficha al hacer clic, 34 clústeres, panel de fuentes y licencias, consola sin errores) y se **conservó**, corrigiendo únicamente el basemap del punto 16; la versión descartada no quedó en el repositorio. |
+| 19 | GitHub **no registraba el workflow** pese a que `.github/workflows/deploy.yml` estaba en la rama por defecto: la pestaña Actions decía *No workflows found*, `GET …/actions/workflows` devolvía `total_count: 0` y en el repositorio no corría nada (ni `schedule` ni `workflow_dispatch`) | El re-indexado **solo se fuerza modificando el archivo del workflow**: un commit vacío no sirve porque no cambia nada bajo `.github/workflows/`. Al agregarle 3 líneas de comentario y pushear, `deploy-map` apareció al instante con `state: active` (id `410065048`). Diagnóstico confirmado con la comunidad de GitHub (discusión 211438). |
+| 20 | El build pasaba completo pero el job `deploy` fallaba: *Branch "feature/initial-map" is not allowed to deploy to github-pages due to environment protection rules*. El entorno `github-pages` tenía `custom_branch_policies: true` **sin ninguna rama permitida** | `PATCH /repos/…/environments/github-pages` respondía **404**; el mismo cambio funcionó con **`PUT`**: cuerpo `{"deployment_branch_policy": null}` (sin restricción de rama, el valor por defecto de GitHub) → `protection_rules: []` → el job `deploy` pasó en 10 s. El entorno temporal `_perm_test` creado para descartar un problema de permisos se borró con `DELETE`. |
 
 ---
 
@@ -265,42 +267,49 @@ para las sesiones del 6-7/11/2026.
 
 ## 9. Estado de publicación
 
-**Actualizado: 2026-11-07.**
+**Actualizado: 2026-11-07 — mapa publicado y verificado en vivo.**
 
 | Elemento | Estado |
 | --- | --- |
 | Repositorio | `gabrielazea2018-droid/mapa-bogota-interactive` (público) |
-| Rama de trabajo | `feature/initial-map`, con 2 commits: `6c12b4d` (pipeline + CI) y `c7f91ea` (constructor del mapa + validador) |
+| Rama de trabajo | `feature/initial-map`, con 5 commits: `6c12b4d` (pipeline + CI), `c7f91ea` (constructor + validador), `d3d3cae` (documentación), `f73dd7d` (commit vacío) y `691ab66` (toque del workflow que forzó su indexado) |
 | Remoto `origin` | actualizado (`git push origin feature/initial-map`, exit 0) |
-| GitHub Pages | configurado con `build_type = workflow`; URL asignada: `https://gabrielazea2018-droid.github.io/mapa-bogota-interactive/` |
-| Workflow `deploy-map` | definido en `.github/workflows/deploy.yml` (5 pasos: fetch → process → build → validate → deploy) |
-| Verificación local | `fetch_data.py`, `process_data.py`, `build_map.py` y `validate.py` en exit 0; `validate.py` **9/9**; `pytest` **4/4**; `index.html` de 32 KB sin errores de consola en el navegador |
-| Despliegue | **no ejecutado** |
+| Workflow `deploy-map` | **registrado y `active`** (id `410065048`) en `.github/workflows/deploy.yml`; 5 pasos: fetch → process → build → validate → deploy |
+| GitHub Pages | `build_type = workflow`; URL: `https://gabrielazea2018-droid.github.io/mapa-bogota-interactive/` |
+| Ejecución publicada | run [`42340253747`](https://github.com/gabrielazea2018-droid/mapa-bogota-interactive/actions/runs/42340253747) sobre el SHA `691ab66`, disparada con `gh workflow run deploy-map --ref feature/initial-map`: build **1 m 37 s** (los 5 pasos en verde) + deploy **10 s**, conclusión **success** |
+| Verificación en vivo | `GET /` → **200** (31 355 B, título *Mapa interactivo de Bogotá*); `GET /data/localidades.geojson` → **200** (44 362 B); en el navegador: coropleta, 34 clústeres, leyenda de 9 filas, 6 capas en el control y **consola sin ningún mensaje** |
+| Verificación local | `fetch_data.py`, `process_data.py`, `build_map.py` y `validate.py` en exit 0; `validate.py` **9/9**; `pytest` **4/4**; `index.html` de 32 KB sin errores de consola |
 
-### Bloqueo actual
+### Cómo se publicó
 
-El repositorio remoto **no tiene la rama `main`**: solo existe
-`feature/initial-map`, y GitHub la adoptó como rama por defecto al ser la
-única rama empujada. Por eso:
+Se tomó la salida **B** (elegida explícitamente): desplegar desde la rama de
+features **sin tocar `main`**. Tres pasos resolvieron el camino:
 
-1. `gh pr create --base main` falla con `Base ref must be a branch` (no hay
-   rama base).
-2. El `schedule` semanal de Actions solo se ejecuta desde la rama por defecto
-   del repositorio.
+1. **Indexar el workflow** — GitHub no lo había registrado nunca; se forzó
+   tocando `.github/workflows/deploy.yml` (problema 19).
+2. **Quitar la protección del entorno** — `github-pages` no permitía desplegar
+   desde ninguna rama; se reemplazó la política con `PUT` (problema 20).
+3. **Disparar el despliegue** — `gh workflow run deploy-map --ref
+   feature/initial-map` → run `42340253747` → **success**.
+
+### Pendiente
+
+La rama `main` **sigue sin existir** en el remoto: solo está
+`feature/initial-map`, que GitHub conserva como rama por defecto. Consecuencias
+prácticas:
+
+1. `gh pr create --base main` sigue fallando con `Base ref must be a branch`
+   (no hay rama base): todavía no hay PR ni revisión por fusión.
+2. Los triggers `push: branches [main]` y `pull_request: branches [main]` del
+   workflow **no se activan**; por ahora la única forma de republicar es
+   `gh workflow run deploy-map --ref feature/initial-map`.
+3. El `schedule` semanal **sí corre**, porque GitHub lo toma de la rama por
+   defecto, que es precisamente donde está el workflow.
 
 Crear `main` implicaría hacer push a `main`, lo que prohíbe la regla global
-*"Never push to the main branch"*, así que la decisión queda **pendiente de
-tu aprobación**. Las dos salidas posibles:
-
-- **A (recomendada):** crear `main` como commit raíz **vacío** (sin ningún
-  archivo del proyecto) y ponerla como rama por defecto; luego
-  `gh pr create --base main --head feature/initial-map` (el diff mostraría los
-  2 commits completos) y tú apruebas la fusión. Ningún archivo llega a `main`
-  sin tu visto bueno.
-- **B:** no crear `main` y desplegar desde la rama actual con
-  `gh workflow run deploy-map --ref feature/initial-map`; se publica el mapa
-  pero no hay PR ni revisión por fusión.
-
-En cuanto se elija una salida y se fusione (o se dispare el workflow), esta
-sección se cierra con el SHA del merge, el id de la ejecución de Actions y la
-URL viva.
+*"Never push to the main branch"*, así que esa decisión queda **pendiente de
+tu aprobación**. Cuando la des, el plan es: `main` como commit raíz **vacío**
+→ ponerla como rama por defecto → `gh pr create --base main --head
+feature/initial-map` → tú apruebas la fusión → el push a `main` dispara el
+despliegue sin comandos manuales. Esta sección se actualizará con el SHA del
+merge.

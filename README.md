@@ -5,9 +5,10 @@ Mapa web interactivo de Bogotá D.C. construido con [Folium](https://python-visu
 ## Enlaces
 
 - **Repositorio:** https://github.com/gabrielazea2018-droid/mapa-bogota-interactive
-- **Mapa publicado (tras publicar):** https://gabrielazea2018-droid.github.io/mapa-bogota-interactive/
+- **Mapa publicado:** https://gabrielazea2018-droid.github.io/mapa-bogota-interactive/
+- **Último despliegue (Actions):** https://github.com/gabrielazea2018-droid/mapa-bogota-interactive/actions
 
-> Las dos URL de arriba funcionan **después** de crear el repositorio público en GitHub y activar GitHub Pages con la fuente "GitHub Actions" (ver la sección [Despliegue automático](#despliegue-automático-github-actions)).
+> El mapa **ya está publicado**: ambas URL responden con HTTP 200. Si reproduces el proyecto en otro repositorio, sigue la sección [Despliegue automático](#despliegue-automático-github-actions), que incluye los dos obstáculos que hay que sortear la primera vez.
 
 ## Vista previa
 
@@ -124,8 +125,13 @@ Pasos para activarlo la primera vez:
 
 1. Crea el repositorio público `mapa-bogota-interactive` en GitHub y sube el código.
 2. Ve a **Settings → Pages** y en *Build and deployment → Source* elige **GitHub Actions**.
-3. Ve a la pestaña **Actions**, selecciona **deploy-map** y pulsa **Run workflow** (o espera al primer push a `main`).
+3. Ve a la pestaña **Actions**, selecciona **deploy-map** y pulsa **Run workflow** (o espera al primer push a `main`). Si la rama por defecto todavía no es `main`, dispara desde la CLI: `gh workflow run deploy-map --ref <rama>`.
 4. Cuando termine, el mapa estará en https://gabrielazea2018-droid.github.io/mapa-bogota-interactive/
+
+> **Dos obstáculos que aparecen la primera vez** (bitácora, problemas 19 y 20):
+>
+> 1. GitHub **no registra el workflow** hasta que cambias el archivo `.github/workflows/deploy.yml` y haces push: un commit vacío no basta porque no toca nada bajo esa carpeta. Si la pestaña *Actions* dice *No workflows found*, agrega un comentario al workflow y vuelve a subir.
+> 2. El entorno `github-pages` puede quedar con una política de ramas que **no permite ninguna**: el build pasa completo pero el job `deploy` falla con *"Branch … is not allowed to deploy to github-pages"*. Se arregla en **Settings → Environments → github-pages → Deployment branches and tags → No restriction**, o desde la CLI: `gh api -X PUT repos/OWNER/REPO/environments/github-pages --input policy.json`, donde `policy.json` contiene `{"deployment_branch_policy": null}`.
 
 ## Actualización de datos
 
