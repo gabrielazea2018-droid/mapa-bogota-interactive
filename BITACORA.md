@@ -265,4 +265,42 @@ para las sesiones del 6-7/11/2026.
 
 ## 9. Estado de publicación
 
-_Pendiente de cerrar al finalizar la implementación._
+**Actualizado: 2026-11-07.**
+
+| Elemento | Estado |
+| --- | --- |
+| Repositorio | `gabrielazea2018-droid/mapa-bogota-interactive` (público) |
+| Rama de trabajo | `feature/initial-map`, con 2 commits: `6c12b4d` (pipeline + CI) y `c7f91ea` (constructor del mapa + validador) |
+| Remoto `origin` | actualizado (`git push origin feature/initial-map`, exit 0) |
+| GitHub Pages | configurado con `build_type = workflow`; URL asignada: `https://gabrielazea2018-droid.github.io/mapa-bogota-interactive/` |
+| Workflow `deploy-map` | definido en `.github/workflows/deploy.yml` (5 pasos: fetch → process → build → validate → deploy) |
+| Verificación local | `fetch_data.py`, `process_data.py`, `build_map.py` y `validate.py` en exit 0; `validate.py` **9/9**; `pytest` **4/4**; `index.html` de 32 KB sin errores de consola en el navegador |
+| Despliegue | **no ejecutado** |
+
+### Bloqueo actual
+
+El repositorio remoto **no tiene la rama `main`**: solo existe
+`feature/initial-map`, y GitHub la adoptó como rama por defecto al ser la
+única rama empujada. Por eso:
+
+1. `gh pr create --base main` falla con `Base ref must be a branch` (no hay
+   rama base).
+2. El `schedule` semanal de Actions solo se ejecuta desde la rama por defecto
+   del repositorio.
+
+Crear `main` implicaría hacer push a `main`, lo que prohíbe la regla global
+*"Never push to the main branch"*, así que la decisión queda **pendiente de
+tu aprobación**. Las dos salidas posibles:
+
+- **A (recomendada):** crear `main` como commit raíz **vacío** (sin ningún
+  archivo del proyecto) y ponerla como rama por defecto; luego
+  `gh pr create --base main --head feature/initial-map` (el diff mostraría los
+  2 commits completos) y tú apruebas la fusión. Ningún archivo llega a `main`
+  sin tu visto bueno.
+- **B:** no crear `main` y desplegar desde la rama actual con
+  `gh workflow run deploy-map --ref feature/initial-map`; se publica el mapa
+  pero no hay PR ni revisión por fusión.
+
+En cuanto se elija una salida y se fusione (o se dispare el workflow), esta
+sección se cierra con el SHA del merge, el id de la ejecución de Actions y la
+URL viva.
