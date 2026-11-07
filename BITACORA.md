@@ -137,7 +137,7 @@ fecha de cada descarga en `data/raw/provenance.json` (se genera con
 | 6 | `colegios-bogota-d-c` | SDE | CC BY-SA 4.0 | GeoJSON (2 176 puntos) en **Web Mercator** | capa Educación |
 | 7 | `parque-bogota-d-c` (POT) | SDHT | CC BY 4.0 | GeoJSON (5 328 polígonos, 14,3 MB) | capa Parques |
 | 8 | `parques-idrd` | IDRD | CC BY-SA 4.0 | CSV **sin coordenadas** | **descartado** (ver §6.9) |
-| — | CartoDB Positron / OpenStreetMap | CARTO / OSM | ODbL | tiles | mapa base |
+| — | Esri Light Gray Canvas + Reference | Esri / OSM | uso con atribución | tiles | mapa base (CARTO exige API key, ver §4 #16) |
 
 Otras fuentes de consulta (catálogo, metadatos y catálogo de objetos):
 
@@ -182,7 +182,10 @@ Ninguno de los siguientes se resolvió a mano: cada uno terminó en código del 
 | 12 | Embeber todo en el HTML de Folium habría generado un **index.html de varios MB** | Cada capa se carga en tiempo de ejecución con `fetch('data/…')` desde una macro propia de `branca`, así el HTML queda < 500 KB y los datos se cachean por separado. |
 | 13 | `Invoke-WebRequest` de Windows PowerShell 5.1 fallaba en modo no interactivo | Se usó `-UseBasicParsing` y, sobre todo, se migró la descarga a `requests` dentro de `fetch_data.py` (con reintentos y backoff exponencial). |
 | 14 | El repositorio no existía aún y `gh repo view` devolvía `Could not resolve to a Repository` | Se creó con `gh repo create … --public --source . --remote origin`. |
-| 15 | Conflicto con la regla global **"nunca hacer push a la main"**: `schedule` y `workflow_dispatch` de GitHub Actions solo se activan desde la rama por defecto y Pages despliega desde allí | El trabajo se ramakea en `feature/initial-map`, se abre PR con `gh pr create` y **la fusión a `main` queda pendiente de tu aprobación explícita**; después de fusionar se dispara `workflow_dispatch` para publicar. |
+| 15 | Conflicto con la regla global **"nunca hacer push a la main"**: `schedule` y `workflow_dispatch` de GitHub Actions solo se activan desde la rama por defecto y Pages despliega desde allí | El trabajo se ramifica en `feature/initial-map`, se abre PR con `gh pr create` y **la fusión a `main` queda pendiente de tu aprobación explícita**; después de fusionar se dispara `workflow_dispatch` para publicar. |
+| 16 | El mapa base **CartoDB Positron dejó de funcionar**: `basemaps.cartocdn.com` responde a toda petición sin clave con una imagen de **2 049 bytes** con la marca `API KEY REQUIRED` (verificado en `light_all`, `light_all@2x` y `rastertiles`), así que el mapa se publicaba sin calles | Se sondearon 9 proveedores descargando tiles reales de la misma celda: OSM (3 442 B), Esri Street Map (13 457 B) y Esri Light Gray (4 639 B) devolvían imagen verdadera. Se migró a **Esri Light Gray Canvas** más su capa `World_Light_Gray_Reference` para etiquetas, con atribución completa; `validate.py` (marker del check 3), `sources.yaml`, README y esta bitácora se actualizaron en el mismo cambio. |
+| 17 | La validación del agente B **rechazaba los datos reales**: su bbox (lon -74.4..-73.9, lat 3.7..4.8) no cubre Engativá (-74.45) ni Sumapaz (3.73); además el **test de aceptación fallaba** porque el sitio sintético solo traía 3 archivos y 2 localidades | Bbox ampliado a lon -74.60..-73.70 y lat 3.50..5.10, con verificación de que las 5 capas quedan al **100 % dentro**. El fixture de `tests/test_pipeline.py` se hizo realista: 20 localidades, 1 050 IPS, 1 050 colegios, 130 barrios y 130 parques, con el mismo contrato de 7 archivos que publica `process_data.py`. |
+| 18 | Dos agentes escribieron `build_map.py` y `validate.py` **en paralelo**: la versión del orquestador fue sobrescrita por la del agente B | Se probó la de B en el navegador (leyenda de 9 filas, ficha al hacer clic, 34 clústeres, panel de fuentes y licencias, consola sin errores) y se **conservó**, corrigiendo únicamente el basemap del punto 16; la versión descartada no quedó en el repositorio. |
 
 ---
 

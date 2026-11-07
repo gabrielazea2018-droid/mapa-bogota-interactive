@@ -112,8 +112,12 @@ datasets:
   # decision is recorded in BITACORA.md.
 
 # --- Basemap tiles (not downloaded, referenced by build_map.py) --------------
+# CARTO retired keyless access: every unauthenticated request to
+# basemaps.cartocdn.com now returns a 2,049-byte "API KEY REQUIRED" placeholder
+# tile (verified 2026-11 for light_all, @2x and rastertiles), so the basemap
+# uses Esri's keyless Light Gray Canvas plus its label overlay instead.
 basemap:
-  name: "CartoDB Positron (OpenStreetMap)"
-  url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-  subdomains: "abcd"
+  name: "Esri Light Gray Canvas"
+  url: "https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}"
+  labels_url: "https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}"
+  attribution: 'Sources: Esri, HERE, Garmin, FAO, NOAA, USGS, OpenStreetMap contributors, and the GIS User Community'

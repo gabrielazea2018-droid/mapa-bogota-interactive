@@ -58,34 +58,123 @@ def write_json(path: Path, payload: dict) -> None:
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def make_localidades_geojson(out_of_bounds: bool = False) -> dict:
-    """A 2-feature FeatureCollection in lon/lat (WGS84)."""
-    if out_of_bounds:
-        # A polygon clearly outside any Bogotá bbox (longitude -60, Brazil).
-        ring = [[-60.5, -20.5], [-60.4, -20.5], [-60.4, -20.4], [-60.5, -20.4], [-60.5, -20.5]]
-        ring2 = [[-60.3, -20.3], [-60.2, -20.3], [-60.2, -20.2], [-60.3, -20.2], [-60.3, -20.3]]
-    else:
-        # Two small squares inside urban Bogotá.
-        ring = [[-74.09, 4.60], [-74.07, 4.60], [-74.07, 4.62], [-74.09, 4.62], [-74.09, 4.60]]
-        ring2 = [[-74.08, 4.63], [-74.06, 4.63], [-74.06, 4.65], [-74.08, 4.65], [-74.08, 4.63]]
+def _square(lon: float, lat: float, size: float = 0.008) -> list:
+    """Axis-aligned square ring in lon/lat, closed at both ends."""
+    return [
+        [lon, lat], [lon + size, lat], [lon + size, lat + size],
+        [lon, lat + size], [lon, lat],
+    ]
 
+
+def _grid_lon_lat(index: int, columns: int = 25, step: float = 0.004,
+                  lon0: float = -74.15, lat0: float = 4.58) -> tuple[float, float]:
+    """Deterministic point on a small grid that stays inside the Bogota bbox."""
+    return lon0 + (index % columns) * step, lat0 + (index // columns) * step
+
+
+def _point_feature(index: int, properties: dict) -> dict:
+    lon, lat = _grid_lon_lat(index)
+    return {
+        "type": "Feature",
+        "properties": properties,
+        "geometry": {"type": "Point", "coordinates": [lon, lat]},
+    }
+
+
+def _polygon_feature(index: int, properties: dict) -> dict:
+    lon, lat = _grid_lon_lat(index)
+    return {
+        "type": "Feature",
+        "properties": properties,
+        "geometry": {"type": "Polygon", "coordinates": [_square(lon, lat, 0.003)]},
+    }
+
+
+def make_localidades_geojson(out_of_bounds: bool = False) -> dict:
+    """A 20-feature FeatureCollection in lon/lat (WGS84).
+
+    The squares form a small grid over urban Bogota. When ``out_of_bounds`` is
+    set the whole grid is shifted to a point far outside the district so the
+    bbox check has to fail, while the feature count stays valid.
+    """
+    lon0, lat0 = (-60.5, -20.5) if out_of_bounds else (-74.20, 4.55)
+    features = []
+    for index in range(20):
+        lon = lon0 + (index % 10) * 0.01
+        lat = lat0 + (index // 10) * 0.01
+        features.append({
+            "type": "Feature",
+            "properties": {
+                "localidad": f"Localidad {index + 1:02d}",
+                "codigo": f"{index + 1:02d}",
+                "poblacion": 18143 + index * 60000,
+                "hogares": 8556 + index * 20000,
+                "anio": 2022,
+                "densidad": 16999.6,
+                "superficie_km2": 4.88,
+                "sin_dato": False,
+            },
+            "geometry": {"type": "Polygon", "coordinates": [_square(lon, lat)]},
+        })
     return {
         "type": "FeatureCollection",
         "name": "localidades",
         "crs": {"type": "name", "properties": {"name": "urn:ogc:def:crs:OGC:1.3:CRS84"}},
-        "features": [
-            {
-                "type": "Feature",
-                "properties": {"localidad": "Teusaquillo", "nombre": "Teusaquillo", "loc_cod": "08"},
-                "geometry": {"type": "Polygon", "coordinates": [ring]},
-            },
-            {
-                "type": "Feature",
-                "properties": {"localidad": "Chapinero", "nombre": "Chapinero", "loc_cod": "03"},
-                "geometry": {"type": "Polygon", "coordinates": [ring2]},
-            },
-        ],
+        "features": features,
     }
+
+
+def make_barrios_geojson(count: int = 130) -> dict:
+    return {
+        "type": "FeatureCollection",
+        "name": "barrios",
+        "features": [_polygon_feature(i, {"barrio": f"Barrio {i + 1:03d}"})
+                     for i in range(count)],
+    }
+
+
+def make_ips_geojson(count: int = 1050) -> dict:
+    tipos = ("Hospital", "Centro de salud", "Consultorio")
+    features = [
+        _point_feature(i, {
+            "nombre": f"IPS {i + 1:04d}",
+            "tipo": tipos[i % len(tipos)],
+            "direccion": f"Calle {1 + i % 99} #{1 + i % 50}-0{i % 10}",
+            "barrio": f"Barrio {1 + i % 130:03d}",
+            "localidad": f"Localidad {1 + i % 20:02d}",
+        })
+        for i in range(count)
+    ]
+    return {"type": "FeatureCollection", "name": "ips", "features": features}
+
+
+def make_colegios_geojson(count: int = 1050) -> dict:
+    ordenes = ("Oficial", "Concesión", "Privado")
+    features = [
+        _point_feature(i, {
+            "nombre": f"Colegio {i + 1:04d}",
+            "sede": f"Sede {1 + i % 40}",
+            "direccion": f"Carrera {1 + i % 90} #{1 + i % 60}-0{i % 10}",
+            "localidad": f"Localidad {1 + i % 20:02d}",
+            "orden": ordenes[i % len(ordenes)],
+        })
+        for i in range(count)
+    ]
+    return {"type": "FeatureCollection", "name": "colegios", "features": features}
+
+
+def make_parques_geojson(count: int = 130) -> dict:
+    niveles = ("Local", "Zonal", "Metropolitano")
+    features = [
+        _polygon_feature(i, {
+            "nombre": f"Parque {i + 1:03d}",
+            "tipo": "Plaza" if i % 2 else "Cerros orientales",
+            "nivel": niveles[i % len(niveles)],
+            "vocacion": "Recreación pasiva",
+        })
+        for i in range(count)
+    ]
+    return {"type": "FeatureCollection", "name": "parques", "features": features}
 
 
 def make_indicators() -> dict:
@@ -133,7 +222,7 @@ def make_index_html() -> str:
       .then(function (geojson) { L.geoJSON(geojson).addTo(map); });
   </script>
   <script type="text/javascript">
-    var basemap = 'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png';
+    var basemap = 'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}';
   </script>
 </body>
 </html>
@@ -141,11 +230,21 @@ def make_index_html() -> str:
 
 
 def make_site(root: Path, out_of_bounds: bool = False) -> Path:
-    """Build a synthetic site/ tree inside `root` and return its path."""
+    """Build a complete synthetic site/ tree inside `root` and return its path.
+
+    "Complete" means the same seven files scripts/process_data.py publishes,
+    with the record floors validate.py enforces (20 localidades, >=1000 ips and
+    colegios, >=100 barrios and parques) so the acceptance test exercises the
+    real contract instead of a reduced one.
+    """
     site = root / "site"
     (site / "data").mkdir(parents=True, exist_ok=True)
 
     write_json(site / "data" / "localidades.geojson", make_localidades_geojson(out_of_bounds))
+    write_json(site / "data" / "barrios.geojson", make_barrios_geojson())
+    write_json(site / "data" / "ips.geojson", make_ips_geojson())
+    write_json(site / "data" / "colegios.geojson", make_colegios_geojson())
+    write_json(site / "data" / "parques.geojson", make_parques_geojson())
     write_json(site / "data" / "indicators.json", make_indicators())
     write_json(site / "data" / "provenance.json", make_provenance())
     write_json(site / "provenance.json", make_provenance())

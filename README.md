@@ -34,7 +34,7 @@ https://datosabiertos.bogota.gov.co/api/3/action/package_search
 | IPS | SDS | CC BY-SA 4.0 |
 | Colegios | SDE | CC BY-SA 4.0 |
 | Parques POT | SDHT | CC BY 4.0 |
-| Mapa base | CartoDB Positron / OpenStreetMap | ODbL (atribución) |
+| Mapa base | Esri Light Gray Canvas (+ capa de etiquetas) | Esri/HERE/OSM (atribución) |
 
 Dos fuentes más se descargan como **respaldo y control de calidad** pero no se publican como capa propia:
 
